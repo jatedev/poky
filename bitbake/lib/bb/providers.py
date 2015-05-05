@@ -323,11 +323,12 @@ def filterProvidersRunTime(providers, item, cfgData, dataCache):
     for p in eligible:
         pn = dataCache.pkg_fn[p]
         provides = dataCache.pn_provides[pn]
+        provides.append(item)
         for provide in provides:
-            prefervar = cfgData.getVar('PREFERRED_PROVIDER_%s' % provide, True)
-            #logger.debug(1, "checking PREFERRED_PROVIDER_%s (value %s) against %s", provide, prefervar, pns.keys())
+            prefervar = cfgData.getVar('PREFERRED_RPROVIDER_%s' % provide, True)
+            #logger.debug(1, "checking PREFERRED_RPROVIDER_%s (value %s) against %s", provide, prefervar, pns.keys())
             if prefervar in pns and pns[prefervar] not in preferred:
-                var = "PREFERRED_PROVIDER_%s = %s" % (provide, prefervar)
+                var = "PREFERRED_RPROVIDER_%s = %s" % (provide, prefervar)
                 logger.verbose("selecting %s to satisfy runtime %s due to %s", prefervar, item, var)
                 preferred_vars.append(var)
                 pref = pns[prefervar]
