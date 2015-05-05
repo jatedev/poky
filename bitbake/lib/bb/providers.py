@@ -323,6 +323,7 @@ def filterProvidersRunTime(providers, item, cfgData, dataCache):
     for p in eligible:
         pn = dataCache.pkg_fn[p]
         provides = dataCache.pn_provides[pn]
+        provides.append(item)
         for provide in provides:
             prefervar = cfgData.getVar('PREFERRED_PROVIDER_%s' % provide, True)
             #logger.debug(1, "checking PREFERRED_PROVIDER_%s (value %s) against %s", provide, prefervar, pns.keys())
