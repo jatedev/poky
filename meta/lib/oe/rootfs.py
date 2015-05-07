@@ -393,7 +393,7 @@ class RpmRootfs(Rootfs):
         pass
 
     def _log_check_error(self):
-        r = re.compile('(unpacking of archive failed|Cannot find package|exit 1|ERR|Fail)')
+        r = re.compile('(unpacking of archive failed|Cannot find package|exit 1|ERR(?!ED_PROVIDER)|Fail)')
         log_path = self.d.expand("${T}/log.do_rootfs")
         with open(log_path, 'r') as log:
             found_error = 0

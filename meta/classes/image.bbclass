@@ -283,6 +283,20 @@ python rootfs_process_ignore() {
 }
 do_rootfs[prefuncs] += "rootfs_process_ignore"
 
+python rootfs_process_preferred_providers() {
+    inst_pkgs = d.getVar("PACKAGE_INSTALL", True).split()
+    pref_pkgs = list()
+    for pkg in inst_pkgs:
+        prefervar = d.getVar("PREFERRED_PROVIDER_%s" % pkg, True)
+        if prefervar:
+            inst_pkgs.remove(pkg)
+            pref_pkgs.append(prefervar)
+            bb.note("Selecting %s to provide %s due to PREFERRED_PROVIDER" % (prefervar, pkg))
+    inst_pkgs.extend(pref_pkgs)
+    d.setVar("PACKAGE_INSTALL", ' '.join(inst_pkgs))
+}
+do_rootfs[prefuncs] += "rootfs_process_preferred_providers"
+
 # We have to delay the runtime_mapping_rename until just before rootfs runs
 # otherwise, the multilib renaming could step in and squash any fixups that
 # may have occurred.
