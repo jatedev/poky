@@ -320,6 +320,16 @@ def filterProvidersRunTime(providers, item, cfgData, dataCache):
     pns = {}
     for p in eligible:
         pns[dataCache.pkg_fn[p]] = p
+
+    prefervar = cfgData.getVar('PREFERRED_PROVIDER_%s' % (item), True)
+    if prefervar is not None and prefervar in pns:
+        var = "PREFERRED_PROVIDER_%s = %s" % (item, prefervar)
+        logger.verbose("selecting %s to satisfy runtime %s due to %s", prefervar, item, var)
+        preferred_vars.append(var)
+        pref = pns[prefervar]
+        eligible.remove(pref)
+        eligible = [pref] + eligible
+        preferred.append(pref)
     for p in eligible:
         pn = dataCache.pkg_fn[p]
         provides = dataCache.pn_provides[pn]
