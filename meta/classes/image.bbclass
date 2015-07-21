@@ -132,6 +132,25 @@ inherit ${IMAGE_TYPE_live}
 IMAGE_TYPE_vmdk = '${@bb.utils.contains("IMAGE_FSTYPES", "vmdk", "image-vmdk", "", d)}'
 inherit ${IMAGE_TYPE_vmdk}
 
+def packageinfo(d):
+    import oe.packagedata
+    pkginfolist = []
+
+    pkgdata_dir = d.getVar("PKGDATA_DIR", True) + '/runtime/'
+    if os.path.exists(pkgdata_dir):
+        for root, dirs, files in os.walk(pkgdata_dir):
+            for pkgname in files:
+                if pkgname.endswith('.packaged'):
+                    pkgname = pkgname[:-9]
+                    pkgdatafile = root + pkgname
+                    try:
+                        sdata = oe.packagedata.read_pkgdatafile(pkgdatafile)
+                        sdata['PKG'] = pkgname
+                        pkginfolist.append(sdata)
+                    except Exception as e:
+                        bb.warn("Failed to read pkgdata file %s: %s: %s" % (pkgdatafile, e.__class__, str(e)))
+    return pkginfolist
+
 python () {
     deps = " " + imagetypes_getdepends(d)
     d.appendVarFlag('do_rootfs', 'depends', deps)
@@ -282,6 +301,36 @@ python rootfs_process_ignore() {
     d.setVar("PACKAGE_INSTALL_ATTEMPTONLY", ' '.join(inst_attempt_pkgs))
 }
 do_rootfs[prefuncs] += "rootfs_process_ignore"
+
+python rootfs_process_prefer() {
+    packageinfolist = packageinfo(d)
+
+    inst_pkgs = d.getVar("PACKAGE_INSTALL", True).split()
+    pref_pkgs = list()
+    for pkg in inst_pkgs:
+        prefer_var = d.getVar("PREFERRED_PROVIDER_%s" % pkg, True)
+        if prefer_var:
+            bb.note("%s rprovided by recipe %s" % (pkg, prefer_var))
+            # Find preferred package which provides item
+            for p in packageinfolist:
+                # First Look for PN and RPROVIDES_${PN}
+                if p['PN'] == prefer_var:
+                    var = 'RPROVIDES_%s' % p['PKG']
+                    try:
+                        val = p[var]
+                    except KeyError:
+                        continue
+                    rprovides_split = val.split(' ')
+                    if pkg in rprovides_split:
+                        bb.note('%s in %s. Will substitute in PACKAGE_INSTALL' % (pkg, var))
+                        inst_pkgs.remove(pkg)
+                        pref_pkgs.append(p['PKG'])
+            inst_pkgs.extend(pref_pkgs)
+            for p in inst_pkgs:
+                bb.note("%s " % p)
+            d.setVar("PACKAGE_INSTALL", ' '.join(inst_pkgs))
+}
+do_rootfs[prefuncs] += "rootfs_process_prefer"
 
 # We have to delay the runtime_mapping_rename until just before rootfs runs
 # otherwise, the multilib renaming could step in and squash any fixups that
